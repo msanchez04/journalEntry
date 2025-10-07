@@ -1,182 +1,152 @@
-# DayPlanner 
-A simple day planner. This implementation focuses on the core concept of organizing activities for a single day with both manual and AI-assisted scheduling.
+# JournalEntry
 
-## Concept: DayPlanner
+## Augment Design
 
-**Purpose**: Help you organize activities for a single day  
-**Principle**: You can add activities one at a time, assign them to times, and then observe the completed schedule
+**Original Concept**: ConcertStats [User]
 
-### Core State
-- **Activities**: Set of activities with title, duration, and optional startTime
-- **Assignments**: Set of activity-to-time assignments
-- **Time System**: All times in half-hour slots starting at midnight (0 = 12:00 AM, 13 = 6:30 AM)
+**purpose** Provides each user with personalized statistics (concert streaks, artist counts, number of shows attended) and extends journaling structure
 
-### Core Actions
-- `addActivity(title: string, duration: number): Activity`
-- `removeActivity(activity: Activity)`
-- `assignActivity(activity: Activity, startTime: number)`
-- `unassignActivity(activity: Activity)`
-- `requestAssignmentsFromLLM()` - AI-assisted scheduling with hardwired preferences
+**principle** a user’s stats are automatically updated from their concerts to reflect up-to-date experience
 
-## Prerequisites
+**state**
 
-- **Node.js** (version 14 or higher)
-- **TypeScript** (will be installed automatically)
-- **Google Gemini API Key** (free at [Google AI Studio](https://makersuite.google.com/app/apikey))
+a set of StatsRecord with
 
-## Quick Setup
+a totalConcerts Number
 
-### 0. Clone the repo locally and navigate to it
-```cd intro-gemini-schedule```
+a currentStreak Number
 
-### 1. Install Dependencies
+a topArtists List
 
-```bash
-npm install
-```
+a journalEntries Set
 
-### 2. Add Your API Key
+**actions**
 
-**Why use a template?** The `config.json` file contains your private API key and should never be committed to version control. The template approach lets you:
-- Keep the template file in git (safe to share)
-- Create your own `config.json` locally (keeps your API key private)
-- Easily set up the project on any machine
+recordJournal (user: User, concert: ConcertEvent, text: String): (entry: JournalEntry)
 
-**Step 1:** Copy the template file:
-```bash
-cp config.json.template config.json
-```
+**requires** concert exists and user in concert.attendingUsers
 
-**Step 2:** Edit `config.json` and add your API key:
-```json
-{
-  "apiKey": "YOUR_GEMINI_API_KEY_HERE"
-}
-```
+**effect** creates and saves a new JournalEntry for user linked to the concert
 
-**To get your API key:**
-1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Sign in with your Google account
-3. Click "Create API Key"
-4. Copy the key and paste it into `config.json` (replacing `YOUR_GEMINI_API_KEY_HERE`)
+<br/>
 
-### 3. Run the Application
+generateStats (user: User): (stats: StatsRecord)
 
-**Run all test cases:**
-```bash
-npm start
-```
+**requires** user exists
 
-**Run specific test cases:**
-```bash
-npm run manual    # Manual scheduling only
-npm run llm       # LLM-assisted scheduling only
-npm run mixed     # Mixed manual + LLM scheduling
-```
+**effect** computes user’s stats from their ConcertEvents and MediaAlbums and returns updated StatsRecord
 
-## File Structure
+<br/>
 
-```
-dayplanner/
-├── package.json              # Dependencies and scripts
-├── tsconfig.json             # TypeScript configuration
-├── config.json               # Your Gemini API key
-├── dayplanner-types.ts       # Core type definitions
-├── dayplanner.ts             # DayPlanner class implementation
-├── dayplanner-llm.ts         # LLM integration
-├── dayplanner-tests.ts       # Test cases and examples
-├── dist/                     # Compiled JavaScript output
-└── README.md                 # This file
-```
+**AI Augmented Concept**: ConcertStatsAI [User]
 
-## Test Cases
+**purpose** Automatically summarizes a user’s concert history and generates personalized recommendations for future artists to see, enhancing self-reflection and discovery
 
-The application includes three comprehensive test cases:
+**principle** Given a user’s concert log, the AI augmentation generates a structured text summary and artist recommendations based on user patterns, genres, and ratings
 
-### 1. Manual Scheduling
-Demonstrates adding activities and manually assigning them to time slots:
+**state**
 
-```typescript
-const planner = new DayPlanner();
-const breakfast = planner.addActivity('Breakfast', 1); // 30 minutes
-planner.assignActivity(breakfast, 14); // 7:00 AM
-```
+a set of concertRecord with
 
-### 2. LLM-Assisted Scheduling
-Shows AI-powered scheduling with hardwired preferences:
+a userId String
 
-```typescript
-const planner = new DayPlanner();
-planner.addActivity('Morning Jog', 2);
-planner.addActivity('Math Homework', 4);
-await llm.requestAssignmentsFromLLM(planner);
-```
+an artist String
 
-### 3. Mixed Scheduling
-Combines manual assignments with AI assistance for remaining activities.
+a venue String
 
-## Sample Output
+a date String
 
-```
-📅 Daily Schedule
-==================
-7:00 AM - Breakfast (30 min)
-8:00 AM - Morning Workout (1 hours)
-10:00 AM - Study Session (1.5 hours)
-1:00 PM - Lunch (30 min)
-3:00 PM - Team Meeting (1 hours)
-7:00 PM - Dinner (30 min)
-9:00 PM - Evening Reading (1 hours)
+an optional rating Number
 
-📋 Unassigned Activities
-========================
-All activities are assigned!
-```
+<br/>
 
-## Key Features
+a set of concertSummary with
 
-- **Simple State Management**: Activities and assignments stored in memory
-- **Flexible Time System**: Half-hour slots from midnight (0-47)
-- **Query-Based Display**: Schedule generated on-demand, not stored sorted
-- **AI Integration**: Hardwired preferences in LLM prompt (no external hints)
-- **Conflict Detection**: Prevents overlapping activities
-- **Clean Architecture**: First principles implementation with no legacy code
+a summary String
 
-## LLM Preferences (Hardwired)
+a set of String recommendations
 
-The AI uses these built-in preferences:
-- Exercise activities: Morning (6:00 AM - 10:00 AM)
-- Study/Classes: Focused hours (9:00 AM - 5:00 PM)
-- Meals: Regular intervals (breakfast 7-9 AM, lunch 12-1 PM, dinner 6-8 PM)
-- Social/Relaxation: Evenings (6:00 PM - 10:00 PM)
-- Avoid: Demanding activities after 10:00 PM
+**actions**
 
-## Troubleshooting
+logConcert(userId, artist, venue, date, rating?)
 
-### "Could not load config.json"
-- Ensure `config.json` exists with your API key
-- Check JSON format is correct
+**requires** concert exists and user in concert.attendingUsers
 
-### "Error calling Gemini API"
-- Verify API key is correct
-- Check internet connection
-- Ensure API access is enabled in Google AI Studio
+**effect** stores a new concert record for that user
 
-### Build Issues
-- Use `npm run build` to compile TypeScript
-- Check that all dependencies are installed with `npm install`
+<br/>
 
-## Next Steps
+generateSummaryAI(userId, llm, promptVariant?)
 
-Try extending the DayPlanner:
-- Add weekly scheduling
-- Implement activity categories
-- Add location information
-- Create a web interface
-- Add conflict resolution strategies
-- Implement recurring activities
+**requires** user has at least one logged concert
 
-## Resources
+**effect** sends the user’s concert data to an LLM. The model summarizes concert trends (as one paragraph) and suggests 2–3 similar artists. It returns both a summary and recommendations array
 
-- [Google Generative AI Documentation](https://ai.google.dev/docs)
-- [TypeScript Documentation](https://www.typescriptlang.org/docs/)
+<br/>
+
+getUserStats(userId)
+
+**requires** user exists and has at least one logged concert
+
+**effect** aggregates total concerts, unique artists, and average rating
+
+## User Interaction
+
+### User Sketches
+
+<img src="./assets/stats_page.jpg" width="600" />
+<img src="./assets/stats_page_ai.jpg" width="600" />
+
+### User Journey
+
+A user enters the Venu app to see their concert stats page. Here they find their concerts attended, their top artists and the locations of venues they visited. Additionally they see the AI Journal button option. The user is interested in seeing a summary of their past concerts as well as artist reccomendations for future potential concerts. The user clicks on the AI Journal button and is provided a summary of past concert experiences and a reccomendation of future artists to see based on past events.
+
+## Test Cases and Prompts
+
+### Experiment 0 - Test Case 0 (test case 1):
+
+**Approach**: In this experiment, the user logs 3 concerts: Coldplay, The 1975, Taylor Swift. The real LLM integration is tested and a baseline structured text prompt requests a paragraph summary and artist recommendations. From this test case a paragraph summary about the user’s concert style and 2–3 recommended artists is expected to be produced. This test case helps confirm that the AI augmentation (prompt, parser, and output display) works correctly under ideal conditions.
+
+**What Worked**: The LLM integration was succesful and produced a reliable summary of the user's concert experiences including dates and ratings. The output also inlcuded relevant artist recommendations for future concerts based on past concert history.
+
+**What Went Wrong**: The reccomendations might be too genre-specific which can be refined later to add a bias to other genres in order to balance out the reccomendations.
+
+**Issues That Remain**: Since the LLM can make creative inferences, it might invent fake concert dates or venues, wrong artists (“You also attended Billie Eilish in 2023”), or overly specific ratings.
+
+### Experiment 1 - Test Case 1 (test case 2):
+
+**Approach**: In this experiment, a user has only logged one concert event. The system then attempts to generate an AI concert summary using a fake LLM that purposefully ignores the "Summary:" field and only returns recommendations. We do this to test the system’s validator behavior when the AI fails to produce the required Summary field.
+
+**What Worked**: The validator successfully detected the missing summary and threw a controlled error message (Missing summary in LLM output), proving that the code enforces the required structure.
+
+**What Went Wrong**: It is possible that the model may omit fields even with clear instructions in this case.
+
+**Issues That Remain**: While the validator catches missing summaries, it doesn’t automatically retry or reformat the prompt to correct the issue. A future improvement could involve a recovery step that re-prompts the model for the missing field.
+
+### Experiment 2 - Test Case 2 (test case 3):
+
+**Approach**: A user logs one concert and the fake LLM is prompted to produce a noisy response with extra text before a valid JSON object. This test case uses the jsonNoise style prompt like {‘summary’: string, ‘recommendations’: string[]}”. This test case is used to see if the parser and validators can extract valid data from a noisy response that still includes usable JSON for the output.
+
+**What Worked**: The test case validated parsing and displayed a correctly structured summary and recommendation list despite additional noise from the fake llm output.
+
+**What Went Wrong**: If the JSON were malformed like if it was missing brackets or using smart quotes, parsing would fail. The current regex could also misfire if extra braces appear earlier in the output.
+
+**Issues That Remain**: The validator only ensures syntactic correctness — it doesn’t verify that the JSON content matches logged concerts (risk of hallucinated or inaccurate summaries).
+
+### Experiment 3 - Test Case 3 (test case 4):
+
+**Approach**: A user logs one concert and the fake llm is prompted to produce a structured output following the summary and reccomended artists format as intended. This test case is used to verify that the model follows the explicit structured output format and that the parser extracts both the summary and recommendations properly.
+
+**What Worked**: The structured variant produced readable summaries and recommendations that parsed correctly.
+
+**What Went Wrong**: Even with explicit instruction to produce a paragraph, the model often produced a single sentence, indicating prompt sensitivity.
+
+**Issues That Remain**: Models may interpret “paragraph” loosely; the parser does not enforce length or stylistic requirements. A potential mitigation is to include a short example in the prompt to illustrate the expected paragraph length.
+
+## Validators
+
+- Issue 1: The LLM could produce a missing summary or a summary that is too short. A validator that could be added to verify this is to check if the summary is empty or not the required length like in lines 153-154 which is tested in test case 2 with the missing summary. When a missing or underspecified summary is detected, this validator throws an error preventing incomplete or low-quality results from being displayed to the user.
+
+- Issue 2: Another issue could be that the LLM produces the reccomended artists in a different format from the expected array of strings. A validator to ensure this is not the case would be to check the output is an array of strings as done in lines 155-156. If an error is thrown, a failure message is thrown instead of silently producing incorrectly formatted data.
+
+- Issue 3: A final issue may be that the LLM produces a JSON output wrapped in additional text which would cause a parsing failure. The parsing validator is found in lines 112-147 where the regex is used to extract the first valid JSON object even if it’s preceded by unrelated text. This output is then validated and displayed to the user.
